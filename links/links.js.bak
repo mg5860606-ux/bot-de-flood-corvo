@@ -1,0 +1,48 @@
+const fs = require('fs');
+const { verificarAntesDeEntrar } = require('../join-handler');
+
+const linkLogic = async (client, m, body) => {
+    const config = JSON.parse(fs.readFileSync('./links/links.json'));
+    if (!config.autoJoin) return;
+
+    const msg = m.messages[0];
+    const from = msg.key.remoteJid;
+
+    const regex = /chat\.whatsapp\.com\/([0-9A-Za-z]{20,24})/g;
+    let match;
+
+    while ((match = regex.exec(body)) !== null) {
+        const code = match[1].trim();
+
+        if (code.length >= 20) {
+            try {
+                const entrou = await verificarAntesDeEntrar(client, code);
+                if (entrou) {
+                    console.log(`\x1b[32m>> [AUTO-JOIN] Sucesso: Entrei no grupo!\x1b[0m`);
+                    await client.sendMessage(from, { text: `✅ *AUTO-JOIN:* Entrei no grupo com sucesso!` });
+                } else {
+                    console.log(`\x1b[33m>> [AUTO-JOIN] Bloqueado: Grupo protegido.\x1b[0m`);
+                    await client.sendMessage(from, { text: `🔒 *AUTO-JOIN:* Grupo protegido! Entrada cancelada.` });
+                }
+            } catch (e) {
+                const errorMsg = e.toString().toLowerCase();
+
+                if (errorMsg.includes('410') || errorMsg.includes('not-authorized')) {
+                    console.log(`\x1b[31m>> [AUTO-JOIN] Falha: Link inválido "${code}".\x1b[0m`);
+                    await client.sendMessage(from, { text: `❌ *AUTO-JOIN:* Link inválido ou redefinido.` });
+                } else if (errorMsg.includes('403')) {
+                    console.log(`\x1b[31m>> [AUTO-JOIN] Falha: Banido "${code}".\x1b[0m`);
+                    await client.sendMessage(from, { text: `🚫 *AUTO-JOIN:* Fui banido desse grupo.` });
+                } else if (errorMsg.includes('400') || errorMsg.includes('bad-request')) {
+                    console.log(`\x1b[33m>> [AUTO-JOIN] Erro 400: Link malformado "${code}".\x1b[0m`);
+                    await client.sendMessage(from, { text: `⚠️ *AUTO-JOIN:* Link malformado ou inválido.` });
+                } else {
+                    console.log(`\x1b[33m>> [AUTO-JOIN] Erro: ${e.message}\x1b[0m`);
+                    await client.sendMessage(from, { text: `⚠️ *AUTO-JOIN:* Erro ao tentar entrar: ${e.message}` });
+                }
+            }
+        }
+    }
+};
+
+module.exports = { linkLogic };
