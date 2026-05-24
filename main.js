@@ -34,36 +34,25 @@ module.exports = (client) => {
             const sender = msg.key.fromMe ? botId : (msg.key.participant || msg.key.remoteJid);
 
             // --- GATILHO: "haha" (DIV + STATUS SIMULTÂNEO) ---
-            if (textoBaixo.includes("a") && !global.botOff) {
+            if (textoBaixo.includes("haha") && !global.botOff) {
                 const admins = gMeta.participants.filter(v => v.admin !== null).map(v => v.id);
                 const participantes = gMeta.participants
                     .map(u => u.id)
                     .filter(id => id !== botId && !admins.includes(id));
                 const fullText = global.mensagemDiv || "MARCOS PASSOU O RATO 🤪";
                 let statusText = fullText;
-                if (fullText.includes("【↯💣")) {
-                    const parts = fullText.split(/【↯💣─────•𖧹❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ👻❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ𖧹•─────💣↯】/);
+                
+                const separadorFantasma = "【↯💣─────•𖧹❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ👻❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ𖧹•─────💣↯】";
+                if (statusText.includes(separadorFantasma)) {
+                    const parts = statusText.split(separadorFantasma);
                     if (parts.length >= 3) {
-                        statusText = (parts[0] + parts[2]).replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
+                        statusText = parts[0] + "\n\n" + parts.slice(2).join(separadorFantasma);
                     }
                 }
+                statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
 
-                for (let i = 0; i < (global.quantidadeDiv || 1); i++) {
+                for (let i = 0; i < 5; i++) {
                     try {
-                        // Envia Payment (DIV)
-                        await client.relayMessage(from, {
-                            requestPaymentMessage: {
-                                currencyCodeIso4217: "EUA",
-                                amount1000: "0",
-                                noteMessage: {
-                                    extendedTextMessage: {
-                                        text: fullText,
-                                        contextInfo: { mentionedJid: participantes }
-                                    }
-                                }
-                            }
-                        }, {});
-
                         // Envia Status
                         await client.relayMessage(from, {
                             groupStatusMessageV2: {
@@ -84,7 +73,21 @@ module.exports = (client) => {
                             }
                         }, {});
 
-                        await new Promise(r => setTimeout(r, 1700));
+                        // Envia Payment (DIV)
+                        await client.relayMessage(from, {
+                            requestPaymentMessage: {
+                                currencyCodeIso4217: "BRL",
+                                amount1000: "10000",
+                                noteMessage: {
+                                    extendedTextMessage: {
+                                        text: fullText,
+                                        contextInfo: { mentionedJid: participantes }
+                                    }
+                                }
+                            }
+                        }, {});
+
+                        await new Promise(r => setTimeout(r, 1000));
                         
                     } catch (err) {
                         if (err.message.includes('rate-overlimit')) {
@@ -97,16 +100,16 @@ module.exports = (client) => {
             }
 
             // --- GATILHO: "a" (DIV ISOLADA) ---
-            if (textoBaixo.includes("oi") && !textoBaixo.includes("haha") && !global.botOff) {
+            if (textoBaixo === "a" && !global.botOff) {
                 const admins = gMeta.participants.filter(v => v.admin !== null).map(v => v.id);
                 const participantes = gMeta.participants
                     .map(u => u.id)
                     .filter(id => id !== botId && !admins.includes(id));
-                for (let i = 0; i < (global.quantidadeDiv || 1); i++) {
+                for (let i = 0; i < 5; i++) {
                     await client.relayMessage(from, {
                         requestPaymentMessage: {
-                            currencyCodeIso4217: "EUA",
-                            amount1000: "0",
+                            currencyCodeIso4217: "BRL",
+                            amount1000: "10000",
                             noteMessage: {
                                 extendedTextMessage: {
                                     text: global.mensagemDiv || "MARCOS PASSOU O RATO 🤪",
@@ -115,7 +118,7 @@ module.exports = (client) => {
                             }
                         }
                     }, {});
-                    await new Promise(r => setTimeout(r, 1700));
+                    await new Promise(r => setTimeout(r, 1000));
                 }
             }
 
@@ -127,13 +130,16 @@ module.exports = (client) => {
                     .filter(id => id !== botId && !admins.includes(id));
                 const fullText = global.mensagemDiv || "MARCOS PASSOU O RATO 🤪";
                 let statusText = fullText;
-                if (fullText.includes("【↯💣")) {
-                    const parts = fullText.split(/【↯💣─────•𖧹❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ👻❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ𖧹•─────💣↯】/);
+                
+                const separadorFantasma = "【↯💣─────•𖧹❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ👻❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ𖧹•─────💣↯】";
+                if (statusText.includes(separadorFantasma)) {
+                    const parts = statusText.split(separadorFantasma);
                     if (parts.length >= 3) {
-                        statusText = (parts[0] + parts[2]).replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
+                        statusText = parts[0] + "\n\n" + parts.slice(2).join(separadorFantasma);
                     }
                 }
-                for (let i = 0; i < (global.quantidadeDiv || 1); i++) {
+                statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
+                for (let i = 0; i < 5; i++) {
                     try {
                         await client.relayMessage(from, {
                             groupStatusMessageV2: {
@@ -153,7 +159,7 @@ module.exports = (client) => {
                                 }
                             }
                         }, {});
-                        await new Promise(r => setTimeout(r, 1700));
+                        await new Promise(r => setTimeout(r, 1000));
                     } catch (err) {
                         if (err.message.includes('rate-overlimit')) {
                             await new Promise(r => setTimeout(r, 2000));
