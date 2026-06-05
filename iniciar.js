@@ -10,6 +10,14 @@ const readline = require("readline");
 const { Boom } = require("@hapi/boom");
 const qrcode = require("qrcode-terminal");
 
+// ─── SUPRIME RUÍDO INTERNO DO BAILEYS (Bad MAC / Closing session) ─────────
+const _origError = console.error.bind(console);
+const _origLog   = console.log.bind(console);
+const NOISE = ['bad mac', 'failed to decrypt', 'closing open session', 'closing session', 'failed to decrypt message', 'session error'];
+const isNoise = (...args) => args.some(a => NOISE.some(n => String(a).toLowerCase().includes(n)));
+console.error = (...args) => { if (!isNoise(...args)) _origError(...args); };
+console.log   = (...args) => { if (!isNoise(...args)) _origLog(...args); };
+
 const question = (text) => {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     return new Promise((resolve) => rl.question(text, (answer) => { rl.close(); resolve(answer); }));
