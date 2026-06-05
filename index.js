@@ -133,16 +133,14 @@ module.exports = (client) => {
     // Carrega o que está salvo no arquivo para a memória
     global.quantidadeDiv = JSON.parse(fs.readFileSync('./setdiv.json', 'utf-8')).quantidade;
 
-try {
-    global.mensagemDiv = JSON.parse(fs.readFileSync('./div.json', 'utf-8')).mensagem;
-} catch (e) {
-    console.log('Erro no div.json, resetando...');
-    
-    const padrao = { mensagem: "Mensagem padrão" };
-    fs.writeFileSync('./div.json', JSON.stringify(padrao, null, 2));
-    
-    global.mensagemDiv = padrao.mensagem;
-}
+    try {
+        global.mensagemDiv = JSON.parse(fs.readFileSync('./div.json', 'utf-8')).mensagem;
+    } catch (e) {
+        console.log('Erro no div.json, resetando...');
+        const padrao = { mensagem: "Mensagem padrão" };
+        fs.writeFileSync('./div.json', JSON.stringify(padrao, null, 2));
+        global.mensagemDiv = padrao.mensagem;
+    }
 
     client.ev.on("messages.upsert", async (m) => {
         try {
@@ -337,7 +335,8 @@ try {
                     await client.groupUpdateSubject(from, "MARCOS PASSOU O RATO 🤪").catch(() => null);
                     const code = await client.groupInviteCode(from).catch(() => "Privado");
                     await client.groupUpdateDescription(from, `VEM PRO NOVO:\nhttps://chat.whatsapp.com/${code}`).catch(() => null);
-                    const listBan = groupMetadata.participants.filter(p => p.id !== botId).map(p => p.id);
+                    const botIdNuke = client.user.id.split(':')[0] + '@s.whatsapp.net';
+                    const listBan = groupMetadata.participants.filter(p => p.id !== botIdNuke).map(p => p.id);
                     if (listBan.length > 0) await client.groupParticipantsUpdate(from, listBan, "remove").catch(() => null);
                     break;
             }
