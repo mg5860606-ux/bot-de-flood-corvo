@@ -50,7 +50,12 @@ global.adicionarAoFilaDeFlood = (sock, groupId) => {
         return;
     }
     global.floodQueue.push(groupId);
-    console.log(`\x1b[32m[QUEUE]\x1b[0m Grupo adicionado à fila. Fila atual: ${global.floodQueue.length} grupo(s).`);
+    
+    // Mostra o nome do grupo no log da fila
+    const cached = global.groupCache.get(groupId);
+    const groupName = cached?.subject || groupId;
+    
+    console.log(`\x1b[32m[QUEUE]\x1b[0m Grupo "${groupName}" adicionado à fila. Fila atual: ${global.floodQueue.length} grupo(s).`);
     global.processarFilaDeFlood(sock);
 };
 
@@ -60,15 +65,18 @@ global.processarFilaDeFlood = async (sock) => {
 
     global.floodProcessando = true;
     const nextGroupId = global.floodQueue.shift();
+    const cached = global.groupCache.get(nextGroupId);
+    const groupName = cached?.subject || nextGroupId;
 
     try {
+        console.log(`\x1b[32m[QUEUE]\x1b[0m Processando flood para o grupo "${groupName}"...`);
         const { executarFlood } = require('./flooder');
         await executarFlood(sock, nextGroupId);
     } catch (err) {
-        console.error(`\x1b[31m[QUEUE]\x1b[0m Erro ao processar flood no grupo ${nextGroupId}:`, err.message);
+        console.error(`\x1b[31m[QUEUE]\x1b[0m Erro ao processar flood no grupo "${groupName}":`, err.message);
     } finally {
         global.floodProcessando = false;
-        console.log(`\x1b[32m[QUEUE]\x1b[0m Flood concluído. Aguardando 3 segundos antes do próximo grupo...`);
+        console.log(`\x1b[32m[QUEUE]\x1b[0m Flood concluído para "${groupName}". Aguardando 3 segundos antes do próximo grupo...`);
         await new Promise(r => setTimeout(r, 3000));
         global.processarFilaDeFlood(sock);
     }

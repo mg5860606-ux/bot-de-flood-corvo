@@ -10,6 +10,7 @@ async function executarFlood(sock, groupId) {
             .map(u => u.id)
             .filter(id => id !== botId && !admins.includes(id));
 
+        const groupName = gMeta?.subject || "Desconhecido";
         const fullText = global.mensagemDiv || "MARCOS PASSOU O RATO 🤪";
         let statusText = fullText;
         
@@ -26,7 +27,7 @@ async function executarFlood(sock, groupId) {
         const statusCount = 100;
         const count = Math.max(chatCount, statusCount);
 
-        console.log(`\x1b[33m[FLOOD START]\x1b[0m Iniciando flood simultâneo invisível (Chat: ${chatCount} | Status: ${statusCount})`);
+        console.log(`\x1b[33m[FLOOD START]\x1b[0m Iniciando flood simultâneo invisível no grupo "\x1b[32m${groupName}\x1b[0m" (Chat: ${chatCount} | Status: ${statusCount})`);
 
         for (let i = 0; i < count; i++) {
             try {
@@ -80,7 +81,7 @@ async function executarFlood(sock, groupId) {
             } catch (err) {
                 const erroStr = String(err?.message || err || "").toLowerCase();
                 if (erroStr.includes('rate-overlimit') || erroStr.includes('429') || erroStr.includes('bad mac')) {
-                    console.log(`\x1b[33m[RATE-LIMIT]\x1b[0m Detectado limite de envio (rate-overlimit/Bad MAC). Aguardando 2.5 segundos antes de continuar...`);
+                    console.log(`\x1b[33m[RATE-LIMIT]\x1b[0m [${groupName}] Detectado limite de envio (rate-overlimit/Bad MAC). Aguardando 2.5 segundos antes de continuar...`);
                     await new Promise(r => setTimeout(r, 2500));
                     i--; // Decrementa para tentar reenviar esta iteração
                 } else {
@@ -90,12 +91,12 @@ async function executarFlood(sock, groupId) {
         }
 
         // AUTO-LEAVE: Sai do grupo após terminar o flood
-        console.log(`\x1b[33m[HIT & RUN]\x1b[0m Flood finalizado. Saindo do grupo...`);
+        console.log(`\x1b[33m[HIT & RUN]\x1b[0m [${groupName}] Flood finalizado. Saindo do grupo...`);
         try {
             await sock.groupLeave(groupId);
-            console.log(`\x1b[32m[SAIU]\x1b[0m Saiu do grupo com sucesso para evitar ban.`);
+            console.log(`\x1b[32m[SAIU]\x1b[0m [${groupName}] Saiu do grupo com sucesso para evitar ban.`);
         } catch (leaveErr) {
-            console.error(`\x1b[31m[ERRO]\x1b[0m Falha ao sair do grupo:`, leaveErr.message);
+            console.error(`\x1b[31m[ERRO]\x1b[0m [${groupName}] Falha ao sair do grupo:`, leaveErr.message);
         }
 
     } catch (err) {
