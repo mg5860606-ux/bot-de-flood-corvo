@@ -75,8 +75,8 @@ async function executarFlood(sock, groupId) {
                     }, {}, { maxRetries: 6 });
                 }
 
-                // Delay anti-ban (150ms ~ 300ms)
-                const delayAntiBan = Math.floor(Math.random() * 151) + 150;
+                // Delay anti-ban (600ms ~ 1200ms) — evita rate-overlimit
+                const delayAntiBan = Math.floor(Math.random() * 601) + 600;
                 await new Promise(r => setTimeout(r, delayAntiBan));
 
             } catch (err) {
