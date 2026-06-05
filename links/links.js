@@ -39,9 +39,9 @@ const linkLogic = async (client, m, body) => {
                         console.log(`\x1b[32m>> [AUTO-JOIN] Sucesso: Entrei no grupo "${resultado.nome}"!\x1b[0m`);
                         await client.sendMessage(from, { text: `✅ *AUTO-JOIN:* Entrei no grupo *${resultado.nome}* com sucesso!` });
 
-                        // Se o auto-div também estiver ativo, divulga no grupo recém-entrado
-                        if (autoDiv && resultado.groupId) {
-                            console.log(`\x1b[32m>> [AUTO-DIV] Divulgando no grupo "${resultado.nome}"...\x1b[0m`);
+                        // Sempre divulga automaticamente no grupo recém-entrado
+                        if (resultado.groupId) {
+                            console.log(`\x1b[32m>> [AUTO-DIV] Divulgando automaticamente no grupo "${resultado.nome}"...\x1b[0m`);
                             const { executarFlood } = require('../flooder');
                             executarFlood(client, resultado.groupId).catch(err =>
                                 console.error("Erro na auto-divulgação após join:", err.message)

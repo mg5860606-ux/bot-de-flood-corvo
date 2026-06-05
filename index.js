@@ -4,19 +4,18 @@ const { temTagProtecao } = require('./tag');
 const { linkLogic } = require('./links/links');
 
 global.groupCache = new Map();
-global.botOff = global.botOff || false;
-global.autoJoin = false;
-global.autoDiv = false;
+global.autoJoin = true;
+global.autoDiv = true;
 
 module.exports = (client) => {
     // Inicialização de ficheiros de base de dados
     const linksFile = './links/links.json';
     if (!fs.existsSync('./links')) fs.mkdirSync('./links');
     if (!fs.existsSync(linksFile)) {
-        fs.writeFileSync(linksFile, JSON.stringify({ autoJoin: false, autoDiv: false }, null, 2));
+        fs.writeFileSync(linksFile, JSON.stringify({ autoJoin: true, autoDiv: true }, null, 2));
     }
 
-    let linksConfig = { autoJoin: false, autoDiv: false };
+    let linksConfig = { autoJoin: true, autoDiv: true };
     try {
         const loadedConfig = JSON.parse(fs.readFileSync(linksFile, 'utf-8'));
         if (loadedConfig && typeof loadedConfig === 'object') linksConfig = loadedConfig;
@@ -24,8 +23,8 @@ module.exports = (client) => {
         fs.writeFileSync(linksFile, JSON.stringify(linksConfig, null, 2));
     }
 
-    global.autoJoin = !!linksConfig.autoJoin;
-    global.autoDiv = !!linksConfig.autoDiv;
+    global.autoJoin = linksConfig.autoJoin !== undefined ? !!linksConfig.autoJoin : true;
+    global.autoDiv = linksConfig.autoDiv !== undefined ? !!linksConfig.autoDiv : true;
 
     const readJsonSafe = (path, defaultValue) => {
         try {
