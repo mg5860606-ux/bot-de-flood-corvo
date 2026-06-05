@@ -21,7 +21,7 @@ const verificarAntesDeEntrar = async (sock, inviteCode) => {
         // Verifica se o bot já está no grupo
         let jaEstava = false;
         try {
-            await sock.groupMetadata(gMeta.id);
+            await global.getGroupMetadata(sock, gMeta.id);
             jaEstava = true;
         } catch (_) {
             jaEstava = false;
@@ -55,7 +55,7 @@ const monitorarEntradaEmGrupos = (sock) => {
         if (!botEntrou) return;
 
         try {
-            const gMeta = await sock.groupMetadata(id);
+            const gMeta = await global.getGroupMetadata(sock, id);
             const desc = gMeta?.desc || gMeta?.description || "";
 
             if (temTagProtecao(desc)) {

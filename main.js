@@ -10,12 +10,11 @@ module.exports = (client) => {
             if (!msg.message || !from || !from.endsWith("@g.us")) return;
 
             // 2. Busca metadados do cache global
-            let gMeta = global.groupCache.get(from);
-            if (!gMeta) {
-                try {
-                    gMeta = await client.groupMetadata(from);
-                    global.groupCache.set(from, gMeta);
-                } catch { return; }
+            let gMeta;
+            try {
+                gMeta = await global.getGroupMetadata(client, from);
+            } catch {
+                return;
             }
 
             // 3. Trava de Segurança via Descrição

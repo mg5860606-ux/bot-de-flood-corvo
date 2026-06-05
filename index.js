@@ -4,6 +4,43 @@ const { temTagProtecao } = require('./tag');
 const { linkLogic } = require('./links/links');
 
 global.groupCache = new Map();
+global.groupPromises = new Map();
+global.getGroupMetadata = async (client, groupId) => {
+    if (global.groupCache.has(groupId)) {
+        return global.groupCache.get(groupId);
+    }
+    if (global.groupPromises.has(groupId)) {
+        try {
+            return await global.groupPromises.get(groupId);
+        } catch (_) {}
+    }
+
+    const fetchWithRetry = async (retries = 3, delay = 2000) => {
+        try {
+            return await client.groupMetadata(groupId);
+        } catch (err) {
+            const errStr = String(err?.message || err || "").toLowerCase();
+            if ((errStr.includes("rate-overlimit") || errStr.includes("429")) && retries > 0) {
+                console.log(`\x1b[33m[METADATA-RATE]\x1b[0m Limite ao obter dados do grupo ${groupId}. Aguardando ${delay / 1000}s e tentando novamente (${retries} tentativas restantes)...`);
+                await new Promise(r => setTimeout(r, delay));
+                return fetchWithRetry(retries - 1, delay * 1.5);
+            }
+            throw err;
+        }
+    };
+
+    const promise = fetchWithRetry();
+    global.groupPromises.set(groupId, promise);
+    try {
+        const metadata = await promise;
+        global.groupCache.set(groupId, metadata);
+        setTimeout(() => global.groupCache.delete(groupId), 60000);
+        return metadata;
+    } finally {
+        global.groupPromises.delete(groupId);
+    }
+};
+
 global.autoJoin = true;
 global.autoDiv = true;
 
@@ -98,13 +135,10 @@ try {
             let isAdmins = true; // No privado, o dono tem sempre permissão
 
             if (isGroup) {
-                // Gestão de Cache para evitar Erro 429
-                if (global.groupCache.has(from)) {
-                    groupMetadata = global.groupCache.get(from);
-                } else {
-                    groupMetadata = await client.groupMetadata(from);
-                    global.groupCache.set(from, groupMetadata);
-                    setTimeout(() => global.groupCache.delete(from), 60000); 
+                try {
+                    groupMetadata = await global.getGroupMetadata(client, from);
+                } catch {
+                    return;
                 }
 
                if (temTagProtecao(groupMetadata?.desc || "")) return;

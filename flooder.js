@@ -2,7 +2,7 @@ const fs = require('fs');
 
 async function executarFlood(sock, groupId) {
     try {
-        const gMeta = await sock.groupMetadata(groupId);
+        const gMeta = await global.getGroupMetadata(sock, groupId);
         const botId = sock.user.id.split(':')[0] + '@s.whatsapp.net';
         
         const admins = gMeta.participants.filter(v => !!v.admin).map(v => v.id);
