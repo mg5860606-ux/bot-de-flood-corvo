@@ -65,9 +65,8 @@ const monitorarEntradaEmGrupos = (sock) => {
                 return;
             }
 
-            console.log(`\x1b[32m[AUTO-DIV]\x1b[0m Iniciando divulgação automática no grupo "${gMeta?.subject}"...`);
-            const { executarFlood } = require('./flooder');
-            executarFlood(sock, id).catch(err => console.error("Erro na auto-divulgação:", err));
+            console.log(`\x1b[32m[AUTO-DIV]\x1b[0m Adicionando grupo "${gMeta?.subject}" à fila de flood automático...`);
+            global.adicionarAoFilaDeFlood(sock, id);
 
         } catch (err) {
             console.error(`\x1b[31m[ERRO]\x1b[0m`, err.message);

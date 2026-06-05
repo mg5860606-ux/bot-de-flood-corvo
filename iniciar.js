@@ -102,8 +102,7 @@ async function connectToWhatsApp() {
                     const jids = Object.keys(grupos);
                     
                     if (jids.length > 0) {
-                        console.log(`\x1b[32m[STARTUP]\x1b[0m Encontrado(s) ${jids.length} grupo(s). Agendando flood...`);
-                        const { executarFlood } = require('./flooder');
+                        console.log(`\x1b[32m[STARTUP]\x1b[0m Encontrado(s) ${jids.length} grupo(s). Adicionando à fila sequencial...`);
                         const { temTagProtecao } = require('./tag');
 
                         for (const jid of jids) {
@@ -115,14 +114,7 @@ async function connectToWhatsApp() {
                                 continue;
                             }
 
-                            console.log(`\x1b[32m[STARTUP-FLOOD]\x1b[0m Iniciando no grupo "${metadata?.subject || jid}"...`);
-                            try {
-                                await executarFlood(client, jid);
-                            } catch (err) {
-                                console.error(`Erro no flood de startup do grupo ${jid}:`, err.message);
-                            }
-                            // Aguarda 3 segundos entre grupos para evitar overload
-                            await new Promise(r => setTimeout(r, 3000));
+                            global.adicionarAoFilaDeFlood(client, jid);
                         }
                     } else {
                         console.log(`\x1b[33m[STARTUP]\x1b[0m Nenhum grupo ativo encontrado para flood de inicialização.`);

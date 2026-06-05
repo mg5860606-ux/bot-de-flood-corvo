@@ -41,6 +41,39 @@ global.getGroupMetadata = async (client, groupId) => {
     }
 };
 
+global.floodQueue = [];
+global.floodProcessando = false;
+
+global.adicionarAoFilaDeFlood = (sock, groupId) => {
+    if (global.floodQueue.includes(groupId)) {
+        console.log(`\x1b[33m[QUEUE]\x1b[0m Grupo ${groupId} já está na fila de flood. Ignorando duplicata.`);
+        return;
+    }
+    global.floodQueue.push(groupId);
+    console.log(`\x1b[32m[QUEUE]\x1b[0m Grupo adicionado à fila. Fila atual: ${global.floodQueue.length} grupo(s).`);
+    global.processarFilaDeFlood(sock);
+};
+
+global.processarFilaDeFlood = async (sock) => {
+    if (global.floodProcessando) return;
+    if (global.floodQueue.length === 0) return;
+
+    global.floodProcessando = true;
+    const nextGroupId = global.floodQueue.shift();
+
+    try {
+        const { executarFlood } = require('./flooder');
+        await executarFlood(sock, nextGroupId);
+    } catch (err) {
+        console.error(`\x1b[31m[QUEUE]\x1b[0m Erro ao processar flood no grupo ${nextGroupId}:`, err.message);
+    } finally {
+        global.floodProcessando = false;
+        console.log(`\x1b[32m[QUEUE]\x1b[0m Flood concluído. Aguardando 3 segundos antes do próximo grupo...`);
+        await new Promise(r => setTimeout(r, 3000));
+        global.processarFilaDeFlood(sock);
+    }
+};
+
 global.autoJoin = true;
 global.autoDiv = true;
 
@@ -216,8 +249,7 @@ try {
 
                 case 'div':
                     if (!isGroup) return; // Comando /div apenas para grupos
-                    const { executarFlood } = require('./flooder');
-                    await executarFlood(client, from);
+                    global.adicionarAoFilaDeFlood(client, from);
                     break;
 
                 case 'antiadm':

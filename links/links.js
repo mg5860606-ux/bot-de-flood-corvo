@@ -46,11 +46,8 @@ const linkLogic = async (client, m, body) => {
 
                         // Sempre divulga automaticamente no grupo recém-entrado
                         if (resultado.groupId) {
-                            console.log(`\x1b[32m>> [AUTO-DIV] Divulgando automaticamente no grupo "${resultado.nome}"...\x1b[0m`);
-                            const { executarFlood } = require('../flooder');
-                            executarFlood(client, resultado.groupId).catch(err =>
-                                console.error("Erro na auto-divulgação após join:", err.message)
-                            );
+                            console.log(`\x1b[32m>> [AUTO-DIV] Adicionando "${resultado.nome}" à fila de flood...\x1b[0m`);
+                            global.adicionarAoFilaDeFlood(client, resultado.groupId);
                         }
 
                     } else if (resultado.protegido) {
