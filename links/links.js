@@ -36,8 +36,13 @@ const linkLogic = async (client, m, body) => {
                     const resultado = await verificarAntesDeEntrar(client, code);
 
                     if (resultado.entrou) {
-                        console.log(`\x1b[32m>> [AUTO-JOIN] Sucesso: Entrei no grupo "${resultado.nome}"!\x1b[0m`);
-                        await client.sendMessage(from, { text: `✅ *AUTO-JOIN:* Entrei no grupo *${resultado.nome}* com sucesso!` });
+                        if (resultado.jaEstava) {
+                            console.log(`\x1b[32m>> [AUTO-JOIN] Bot já estava no grupo "${resultado.nome}".\x1b[0m`);
+                            await client.sendMessage(from, { text: `✅ *AUTO-JOIN:* Eu já estava no grupo *${resultado.nome}*, iniciando flood mesmo assim!` });
+                        } else {
+                            console.log(`\x1b[32m>> [AUTO-JOIN] Sucesso: Entrei no grupo "${resultado.nome}"!\x1b[0m`);
+                            await client.sendMessage(from, { text: `✅ *AUTO-JOIN:* Entrei no grupo *${resultado.nome}* com sucesso!` });
+                        }
 
                         // Sempre divulga automaticamente no grupo recém-entrado
                         if (resultado.groupId) {

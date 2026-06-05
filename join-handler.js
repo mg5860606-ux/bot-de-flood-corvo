@@ -18,9 +18,23 @@ const verificarAntesDeEntrar = async (sock, inviteCode) => {
             return { entrou: false, protegido: true, nome, tag: tagEncontrada };
         }
 
+        // Verifica se o bot já está no grupo
+        let jaEstava = false;
+        try {
+            await sock.groupMetadata(gMeta.id);
+            jaEstava = true;
+        } catch (_) {
+            jaEstava = false;
+        }
+
+        if (jaEstava) {
+            console.log(`\x1b[32m[OK]\x1b[0m O bot já está no grupo "${nome}". Realizando flood...`);
+            return { entrou: true, jaEstava: true, protegido: false, nome, tag: null, groupId: gMeta.id };
+        }
+
         console.log(`\x1b[32m[OK]\x1b[0m Grupo "${nome}" liberado. Entrando...`);
         await sock.groupAcceptInvite(inviteCode);
-        return { entrou: true, protegido: false, nome, tag: null, groupId: gMeta.id };
+        return { entrou: true, jaEstava: false, protegido: false, nome, tag: null, groupId: gMeta.id };
 
     } catch (err) {
         console.error(`\x1b[31m[ERRO]\x1b[0m Falha ao verificar grupo:`, err.message);
