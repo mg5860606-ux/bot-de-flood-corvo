@@ -3,6 +3,21 @@ const enviarMenu = require('./menu');
 const { temTagProtecao } = require('./tag');
 const { linkLogic } = require('./links/links');
 
+// ─── BLACKLIST DE GRUPOS ───────────────────────────────────────────────────
+const BLACKLIST_FILE = './blacklist.json';
+const carregarBlacklist = () => {
+    try { return JSON.parse(fs.readFileSync(BLACKLIST_FILE, 'utf-8')); }
+    catch { return []; }
+};
+const salvarBlacklist = (lista) => fs.writeFileSync(BLACKLIST_FILE, JSON.stringify(lista, null, 2));
+global.blacklistGrupos = carregarBlacklist();
+
+const isBlacklisted = (groupId) => {
+    const cached = global.groupCache.get(groupId);
+    const nome = cached?.subject || '';
+    return global.blacklistGrupos.some(b => b.toLowerCase() === nome.toLowerCase());
+};
+
 global.groupCache = new Map();
 global.groupPromises = new Map();
 global.getGroupMetadata = async (client, groupId) => {
@@ -45,16 +60,21 @@ global.floodQueue = [];
 global.floodProcessando = false;
 
 global.adicionarAoFilaDeFlood = (sock, groupId) => {
-    if (global.floodQueue.includes(groupId)) {
-        console.log(`\x1b[33m[QUEUE]\x1b[0m Grupo ${groupId} já está na fila de flood. Ignorando duplicata.`);
-        return;
-    }
-    global.floodQueue.push(groupId);
-    
-    // Mostra o nome do grupo no log da fila
     const cached = global.groupCache.get(groupId);
     const groupName = cached?.subject || groupId;
-    
+
+    // Verifica blacklist pelo nome do grupo
+    if (isBlacklisted(groupId)) {
+        console.log(`\x1b[33m[SKIP]\x1b[0m Grupo "${groupName}" está na blacklist. Ignorando.`);
+        return;
+    }
+
+    if (global.floodQueue.includes(groupId)) {
+        console.log(`\x1b[33m[QUEUE]\x1b[0m Grupo "${groupName}" já está na fila. Ignorando duplicata.`);
+        return;
+    }
+
+    global.floodQueue.push(groupId);
     console.log(`\x1b[32m[QUEUE]\x1b[0m Grupo "${groupName}" adicionado à fila. Fila atual: ${global.floodQueue.length} grupo(s).`);
     global.processarFilaDeFlood(sock);
 };
