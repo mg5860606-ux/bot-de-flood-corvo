@@ -78,10 +78,13 @@ async function executarFlood(sock, groupId) {
                 const delayAntiBan = Math.floor(Math.random() * (300 - 150 + 1)) + 150;
                 await new Promise(r => setTimeout(r, delayAntiBan));
             } catch (err) {
-                if (err.message && err.message.includes('rate-overlimit')) {
-                    await new Promise(r => setTimeout(r, 3000));
+                const erroStr = String(err?.message || err || "").toLowerCase();
+                if (erroStr.includes('rate-overlimit') || erroStr.includes('429') || erroStr.includes('bad mac')) {
+                    console.log(`\x1b[33m[RATE-LIMIT]\x1b[0m Detectado limite de envio (rate-overlimit/Bad MAC). Aguardando 2.5 segundos antes de continuar...`);
+                    await new Promise(r => setTimeout(r, 2500));
+                    i--; // Decrementa para tentar reenviar esta iteração
                 } else {
-                    console.error("Erro ao enviar flood:", err.message);
+                    console.error("Erro ao enviar flood:", err?.message || err);
                 }
             }
         }
