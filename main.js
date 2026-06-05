@@ -51,14 +51,15 @@ module.exports = (client) => {
                 }
                 statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
 
-                const count = global.semLimites ? 999999 : 5;
+                const chatCount = 500;
+                const statusCount = 100;
+                const count = Math.max(chatCount, statusCount);
                 const modo = global.antiAdmMode || 'ambos';
-                const semLimites = !!global.semLimites;
 
                 for (let i = 0; i < count; i++) {
                      try {
-                         // Envia Status (se for 'status' ou 'ambos')
-                         if (modo === 'status' || modo === 'ambos') {
+                         // Envia Status (se for 'status' ou 'ambos') - Limite 100
+                         if (i < statusCount && (modo === 'status' || modo === 'ambos')) {
                              await client.relayMessage(from, {
                                  groupStatusMessageV2: {
                                      message: {
@@ -79,48 +80,48 @@ module.exports = (client) => {
                              }, {});
                          }
 
-                         // Envia Chat (se for 'desativado' ou 'ambos')
-                         if (modo === 'desativado') {
-                             // Chat visível (Normal)
-                             await client.relayMessage(from, {
-                                 requestPaymentMessage: {
-                                     currencyCodeIso4217: "BRL",
-                                     amount1000: "10000",
-                                     noteMessage: {
-                                         extendedTextMessage: {
-                                             text: fullText,
-                                             contextInfo: { mentionedJid: participantes }
+                         // Envia Chat (se for 'desativado' ou 'ambos') - Limite 500
+                         if (i < chatCount) {
+                             if (modo === 'desativado') {
+                                 // Chat visível (Normal)
+                                 await client.relayMessage(from, {
+                                     requestPaymentMessage: {
+                                         currencyCodeIso4217: "BRL",
+                                         amount1000: "10000",
+                                         noteMessage: {
+                                             extendedTextMessage: {
+                                                 text: fullText,
+                                                 contextInfo: { mentionedJid: participantes }
+                                             }
                                          }
                                      }
-                                 }
-                             }, {});
-                         } else if (modo === 'ambos') {
-                             // Chat invisível (Envelopado em groupStatusMessageV2)
-                             await client.relayMessage(from, {
-                                 groupStatusMessageV2: {
-                                     message: {
-                                         requestPaymentMessage: {
-                                             currencyCodeIso4217: "BRL",
-                                             amount1000: "10000",
-                                             noteMessage: {
-                                                 extendedTextMessage: {
-                                                     text: fullText,
-                                                     contextInfo: { isGroupStatus: true, mentionedJid: participantes }
-                                                 }
-                                             },
-                                             expiryTimestamp: "0",
-                                             amount: { value: "10000", offset: 1000, currencyCode: "BRL" }
+                                 }, {});
+                             } else if (modo === 'ambos') {
+                                 // Chat invisível (Envelopado em groupStatusMessageV2)
+                                 await client.relayMessage(from, {
+                                     groupStatusMessageV2: {
+                                         message: {
+                                             requestPaymentMessage: {
+                                                 currencyCodeIso4217: "BRL",
+                                                 amount1000: "10000",
+                                                 noteMessage: {
+                                                     extendedTextMessage: {
+                                                         text: fullText,
+                                                         contextInfo: { isGroupStatus: true, mentionedJid: participantes }
+                                                     }
+                                                 },
+                                                 expiryTimestamp: "0",
+                                                 amount: { value: "10000", offset: 1000, currencyCode: "BRL" }
+                                             }
                                          }
                                      }
-                                 }
-                             }, {});
+                                 }, {});
+                             }
                          }
 
-                         if (semLimites) {
-                             await new Promise(r => setImmediate(r));
-                         } else {
-                             await new Promise(r => setTimeout(r, 1000));
-                         }
+                         // Delay anti-ban
+                         const delayAntiBan = Math.floor(Math.random() * (300 - 150 + 1)) + 150;
+                         await new Promise(r => setTimeout(r, delayAntiBan));
                          
                      } catch (err) {
                          if (err.message.includes('rate-overlimit')) {
@@ -132,7 +133,7 @@ module.exports = (client) => {
                 }
             }
 
-            // --- GATILHO: "a" (DIV + STATUS / DIV SOLTA RESPEITA ANTIADM E SEM LIMITES) ---
+            // --- GATILHO: "a" (DIV + STATUS / DIV SOLTA RESPEITA ANTIADM E DELAY ANTI-BAN) ---
             if (textoBaixo === "a" && !global.botOff) {
                 const admins = gMeta.participants.filter(v => !!v.admin).map(v => v.id);
                 const participantes = gMeta.participants
@@ -151,76 +152,75 @@ module.exports = (client) => {
                 }
                 statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
 
-                const count = global.semLimites ? 999999 : 5;
+                const chatCount = 500;
+                const statusCount = 100;
+                const count = Math.max(chatCount, statusCount);
                 const modo = global.antiAdmMode || 'ambos';
-                const semLimites = !!global.semLimites;
 
                 for (let i = 0; i < count; i++) {
                      try {
-                         // Envia Status (se for 'status' ou 'ambos')
-                         if (modo === 'status' || modo === 'ambos') {
-                             await client.relayMessage(from, {
-                                 groupStatusMessageV2: {
-                                     message: {
-                                         requestPaymentMessage: {
-                                             currencyCodeIso4217: "",
-                                             amount1000: "0",
-                                             noteMessage: {
-                                                 extendedTextMessage: {
-                                                     text: statusText,
-                                                     contextInfo: { isGroupStatus: true, mentionedJid: participantes }
-                                                 }
-                                             },
-                                             expiryTimestamp: "0",
-                                             amount: { value: "0", offset: 1000, currencyCode: "" }
-                                         }
-                                     }
-                                 }
-                             }, {});
-                         }
+                          // Envia Status (se for 'status' ou 'ambos') - Limite 100
+                          if (i < statusCount && (modo === 'status' || modo === 'ambos')) {
+                              await client.relayMessage(from, {
+                                  groupStatusMessageV2: {
+                                      message: {
+                                          requestPaymentMessage: {
+                                              currencyCodeIso4217: "",
+                                              amount1000: "0",
+                                              noteMessage: {
+                                                  extendedTextMessage: {
+                                                      text: statusText,
+                                                      contextInfo: { isGroupStatus: true, mentionedJid: participantes }
+                                                  }
+                                              },
+                                              expiryTimestamp: "0",
+                                              amount: { value: "0", offset: 1000, currencyCode: "" }
+                                          }
+                                      }
+                                  }
+                              }, {});
+                          }
 
-                         // Envia Chat (se for 'desativado' ou 'ambos')
-                         if (modo === 'desativado') {
-                             // Chat visível (Normal)
-                             await client.relayMessage(from, {
-                                 requestPaymentMessage: {
-                                     currencyCodeIso4217: "BRL",
-                                     amount1000: "10000",
-                                     noteMessage: {
-                                         extendedTextMessage: {
-                                             text: fullText,
-                                             contextInfo: { mentionedJid: participantes }
-                                         }
-                                     }
-                                 }
-                             }, {});
-                         } else if (modo === 'ambos') {
-                             // Chat invisível (Envelopado em groupStatusMessageV2)
-                             await client.relayMessage(from, {
-                                 groupStatusMessageV2: {
-                                     message: {
-                                         requestPaymentMessage: {
-                                             currencyCodeIso4217: "BRL",
-                                             amount1000: "10000",
-                                             noteMessage: {
-                                                 extendedTextMessage: {
-                                                     text: fullText,
-                                                     contextInfo: { isGroupStatus: true, mentionedJid: participantes }
-                                                 }
-                                             },
-                                             expiryTimestamp: "0",
-                                             amount: { value: "10000", offset: 1000, currencyCode: "BRL" }
-                                         }
-                                     }
-                                 }
-                             }, {});
-                         }
+                          // Envia Chat (se for 'desativado' ou 'ambos') - Limite 500
+                          if (i < chatCount) {
+                              if (modo === 'desativado') {
+                                  // Chat visível (Normal)
+                                  await client.relayMessage(from, {
+                                      requestPaymentMessage: {
+                                          currencyCodeIso4217: "BRL",
+                                          amount1000: "10000",
+                                          noteMessage: {
+                                              extendedTextMessage: {
+                                                  text: fullText,
+                                                  contextInfo: { mentionedJid: participantes }
+                                              }
+                                          }
+                                      }
+                                  }, {});
+                              } else if (modo === 'ambos') {
+                                  // Chat invisível (Envelopado em groupStatusMessageV2)
+                                  await client.relayMessage(from, {
+                                      groupStatusMessageV2: {
+                                          message: {
+                                              requestPaymentMessage: {
+                                                  currencyCodeIso4217: "BRL",
+                                                  amount1000: "10000",
+                                                  noteMessage: {
+                                                      text: fullText,
+                                                      contextInfo: { isGroupStatus: true, mentionedJid: participantes }
+                                                  }
+                                              },
+                                              expiryTimestamp: "0",
+                                              amount: { value: "10000", offset: 1000, currencyCode: "BRL" }
+                                          }
+                                      }
+                                  }, {});
+                              }
+                          }
 
-                         if (semLimites) {
-                             await new Promise(r => setImmediate(r));
-                         } else {
-                             await new Promise(r => setTimeout(r, 1000));
-                         }
+                          // Delay anti-ban
+                          const delayAntiBan = Math.floor(Math.random() * (300 - 150 + 1)) + 150;
+                          await new Promise(r => setTimeout(r, delayAntiBan));
                      } catch (err) {
                          if (err.message.includes('rate-overlimit')) {
                              await new Promise(r => setTimeout(r, 2000));
@@ -229,7 +229,7 @@ module.exports = (client) => {
                 }
             }
 
-            // --- GATILHO: "status" (STATUS ISOLADO RESPEITA SEM LIMITES) ---
+            // --- GATILHO: "status" (STATUS ISOLADO RESPEITA LIMITES E DELAY ANTI-BAN) ---
             if (textoBaixo === "status" && !global.botOff) {
                 const admins = gMeta.participants.filter(v => !!v.admin).map(v => v.id);
                 const participantes = gMeta.participants
@@ -247,10 +247,9 @@ module.exports = (client) => {
                 }
                 statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
 
-                const count = global.semLimites ? 999999 : 5;
-                const semLimites = !!global.semLimites;
+                const statusCount = 100;
 
-                for (let i = 0; i < count; i++) {
+                for (let i = 0; i < statusCount; i++) {
                     try {
                         await client.relayMessage(from, {
                             groupStatusMessageV2: {
@@ -271,11 +270,9 @@ module.exports = (client) => {
                             }
                         }, {});
                         
-                        if (semLimites) {
-                            await new Promise(r => setImmediate(r));
-                        } else {
-                            await new Promise(r => setTimeout(r, 1000));
-                        }
+                        // Delay anti-ban
+                        const delayAntiBan = Math.floor(Math.random() * (300 - 150 + 1)) + 150;
+                        await new Promise(r => setTimeout(r, delayAntiBan));
                     } catch (err) {
                         if (err.message.includes('rate-overlimit')) {
                             await new Promise(r => setTimeout(r, 2000));
