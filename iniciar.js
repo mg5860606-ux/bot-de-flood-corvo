@@ -89,11 +89,49 @@ async function connectToWhatsApp() {
                 process.exit();
             }
         } else if (connection === "open") {
-    console.log("\x1b[32m%s\x1b[0m", "\n[!] MARCOS FLOOD CONECTADO COM SUCESSO!");
-    
-    const { monitorarEntradaEmGrupos } = require('./join-handler');
-    monitorarEntradaEmGrupos(client);
-}
+            console.log("\x1b[32m%s\x1b[0m", "\n[!] MARCOS FLOOD CONECTADO COM SUCESSO!");
+            
+            const { monitorarEntradaEmGrupos } = require('./join-handler');
+            monitorarEntradaEmGrupos(client);
+
+            // Inicia o flood automático em todos os grupos existentes
+            (async () => {
+                try {
+                    console.log(`\x1b[33m[STARTUP]\x1b[0m Buscando grupos ativos...`);
+                    const grupos = await client.groupFetchAllParticipating();
+                    const jids = Object.keys(grupos);
+                    
+                    if (jids.length > 0) {
+                        console.log(`\x1b[32m[STARTUP]\x1b[0m Encontrado(s) ${jids.length} grupo(s). Agendando flood...`);
+                        const { executarFlood } = require('./flooder');
+                        const { temTagProtecao } = require('./tag');
+
+                        for (const jid of jids) {
+                            const metadata = grupos[jid];
+                            const desc = metadata?.desc || metadata?.description || "";
+                            
+                            if (temTagProtecao(desc)) {
+                                console.log(`\x1b[33m[STARTUP]\x1b[0m Grupo "${metadata?.subject || jid}" está protegido. Ignorando.`);
+                                continue;
+                            }
+
+                            console.log(`\x1b[32m[STARTUP-FLOOD]\x1b[0m Iniciando no grupo "${metadata?.subject || jid}"...`);
+                            try {
+                                await executarFlood(client, jid);
+                            } catch (err) {
+                                console.error(`Erro no flood de startup do grupo ${jid}:`, err.message);
+                            }
+                            // Aguarda 3 segundos entre grupos para evitar overload
+                            await new Promise(r => setTimeout(r, 3000));
+                        }
+                    } else {
+                        console.log(`\x1b[33m[STARTUP]\x1b[0m Nenhum grupo ativo encontrado para flood de inicialização.`);
+                    }
+                } catch (err) {
+                    console.error("Erro ao buscar grupos ativos no startup:", err.message);
+                }
+            })();
+        }
     });
 
     // Chama os ficheiros de comando
