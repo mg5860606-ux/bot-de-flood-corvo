@@ -114,6 +114,14 @@ async function connectToWhatsApp() {
                                 continue;
                             }
 
+                            // Verifica blacklist pelo nome
+                            const nomeGrupo = metadata?.subject || '';
+                            const naBlacklist = (global.blacklistGrupos || []).some(b => b.toLowerCase() === nomeGrupo.toLowerCase());
+                            if (naBlacklist) {
+                                console.log(`\x1b[33m[STARTUP]\x1b[0m Grupo "${nomeGrupo}" está na blacklist. Pulando.`);
+                                continue;
+                            }
+
                             // Preenche o cache local antes do agendamento para mostrar os nomes reais nos logs de fila
                             global.groupCache.set(jid, metadata);
 
