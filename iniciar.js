@@ -114,6 +114,9 @@ async function connectToWhatsApp() {
                                 continue;
                             }
 
+                            // Preenche o cache local antes do agendamento para mostrar os nomes reais nos logs de fila
+                            global.groupCache.set(jid, metadata);
+
                             global.adicionarAoFilaDeFlood(client, jid);
                         }
                     } else {
