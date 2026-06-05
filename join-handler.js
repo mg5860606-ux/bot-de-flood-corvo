@@ -30,6 +30,8 @@ const verificarAntesDeEntrar = async (sock, inviteCode) => {
 
 const monitorarEntradaEmGrupos = (sock) => {
     sock.ev.on("group-participants.update", async (update) => {
+        if (global.botOff) return;
+
         const { id, participants, action, author } = update;
 
         const botId = sock.user.id.split(":")[0];
@@ -37,7 +39,6 @@ const monitorarEntradaEmGrupos = (sock) => {
 
 
         if (!botEntrou) return;
-        if (!!author) return;
 
         try {
             const gMeta = await sock.groupMetadata(id);

@@ -4,21 +4,47 @@ const { temTagProtecao } = require('./tag');
 const { linkLogic } = require('./links/links');
 
 global.groupCache = new Map();
+global.botOff = global.botOff || false;
+global.autoJoin = false;
+global.autoDiv = false;
 
 module.exports = (client) => {
     // Inicialização de ficheiros de base de dados
-    if (!fs.existsSync('./links/links.json')) {
-        if (!fs.existsSync('./links')) fs.mkdirSync('./links');
-        fs.writeFileSync('./links/links.json', JSON.stringify({ autoJoin: false, autoDiv: false }, null, 2));
+    const linksFile = './links/links.json';
+    if (!fs.existsSync('./links')) fs.mkdirSync('./links');
+    if (!fs.existsSync(linksFile)) {
+        fs.writeFileSync(linksFile, JSON.stringify({ autoJoin: false, autoDiv: false }, null, 2));
     }
 
-    let linksConfig;
+    let linksConfig = { autoJoin: false, autoDiv: false };
     try {
-        linksConfig = JSON.parse(fs.readFileSync('./links/links.json', 'utf-8'));
+        const loadedConfig = JSON.parse(fs.readFileSync(linksFile, 'utf-8'));
+        if (loadedConfig && typeof loadedConfig === 'object') linksConfig = loadedConfig;
     } catch {
-        linksConfig = { autoJoin: false, autoDiv: false };
+        fs.writeFileSync(linksFile, JSON.stringify(linksConfig, null, 2));
     }
+
+    global.autoJoin = !!linksConfig.autoJoin;
     global.autoDiv = !!linksConfig.autoDiv;
+
+    const readJsonSafe = (path, defaultValue) => {
+        try {
+            const loaded = JSON.parse(fs.readFileSync(path, 'utf-8'));
+            return loaded && typeof loaded === 'object' ? loaded : defaultValue;
+        } catch {
+            return defaultValue;
+        }
+    };
+
+    const settingsFile = './bot-settings.json';
+    if (!fs.existsSync(settingsFile)) {
+        fs.writeFileSync(settingsFile, JSON.stringify({ botOff: false, antiAdmMode: 'ambos', semLimites: true }, null, 2));
+    }
+    const botSettings = readJsonSafe(settingsFile, { botOff: false, antiAdmMode: 'ambos', semLimites: true });
+    global.botOff = !!botSettings.botOff;
+    global.antiAdmMode = botSettings.antiAdmMode || 'ambos';
+    global.semLimites = botSettings.semLimites !== undefined ? !!botSettings.semLimites : true;
+
     // Só cria o arquivo se ele NÃO existir. Se existir, ele não mexe
     if (!fs.existsSync('./div.json')) {
         fs.writeFileSync('./div.json', JSON.stringify({ mensagem: "MARCOS PASSOU O RATO 🤪" }));
@@ -51,7 +77,6 @@ try {
 
             // --- AUTO-JOIN: USA O TEXTO ORIGINAL (CASE-SENSITIVE) PARA EVITAR ERRO 400 ---
             const fullBody = (msg.message.conversation || msg.message.extendedTextMessage?.text || "");
-            await linkLogic(client, m, fullBody); 
 
             // Definição de comandos e prefixo
             const body = fullBody.toLowerCase().trim();
@@ -59,10 +84,16 @@ try {
             const isCmd = body.startsWith(prefix);
             const command = isCmd ? body.slice(prefix.length).trim().split(/ +/).shift().toLowerCase() : null;
 
+            if (!global.botOff) {
+                await linkLogic(client, m, fullBody);
+            }
+
             const botId = client.user.id.split(':')[0] + '@s.whatsapp.net';
             const sender = msg.key.fromMe ? botId : (msg.key.participant || from);
             // --- FILTRO DE PRIVADO: SÓ RESPONDE SE FOR COMANDO ---
             if (!isGroup && !isCmd) return;
+
+            if (global.botOff && !['botoff', 'invisivel', 'stealth'].includes(command)) return;
 
             let groupMetadata;
             let isAdmins = true; // No privado, o dono tem sempre permissão
@@ -80,7 +111,7 @@ try {
                if (temTagProtecao(groupMetadata?.desc || "")) return;
               
                 // Variável isAdmins personalizada
-                isAdmins = groupMetadata.participants.filter(v => v.admin !== null).map(v => v.id).includes(sender);
+                isAdmins = groupMetadata.participants.filter(v => !!v.admin).map(v => v.id).includes(sender);
             }
 
             const args = body.split(/ +/).slice(1);
@@ -113,27 +144,119 @@ try {
                     break;
 
                 case 'autojoin':
-                    const dbPath = './links/links.json';
-                    let dbAuto = JSON.parse(fs.readFileSync(dbPath));
-                    dbAuto.autoJoin = !dbAuto.autoJoin;
-                    fs.writeFileSync(dbPath, JSON.stringify(dbAuto, null, 2));
-                    await client.sendMessage(from, { text: `🚀 *AUTO-JOIN:* ${dbAuto.autoJoin ? 'LIGADO ✅' : 'DESLIGADO ❌'}` });
+                    {
+                        const dbPath = './links/links.json';
+                        const dbAuto = readJsonSafe(dbPath, { autoJoin: false, autoDiv: global.autoDiv });
+                        dbAuto.autoJoin = !dbAuto.autoJoin;
+                        global.autoJoin = dbAuto.autoJoin;
+                        fs.writeFileSync(dbPath, JSON.stringify(dbAuto, null, 2));
+                        await client.sendMessage(from, { text: `🚀 *AUTO-JOIN:* ${dbAuto.autoJoin ? 'LIGADO ✅' : 'DESLIGADO ❌'}` });
+                    }
                     break;
 
                 case 'autodiv':
                 case 'autodivulgar':
-                    const dbDivPath = './links/links.json';
-                    let dbDiv = JSON.parse(fs.readFileSync(dbDivPath));
-                    dbDiv.autoDiv = !dbDiv.autoDiv;
-                    global.autoDiv = dbDiv.autoDiv;
-                    fs.writeFileSync(dbDivPath, JSON.stringify(dbDiv, null, 2));
-                    await client.sendMessage(from, { text: `🚀 *AUTO-DIVULGAR:* ${dbDiv.autoDiv ? 'LIGADO ✅' : 'DESLIGADO ❌'}` });
+                    {
+                        const dbDivPath = './links/links.json';
+                        const dbDiv = readJsonSafe(dbDivPath, { autoJoin: global.autoJoin, autoDiv: false });
+                        dbDiv.autoDiv = !dbDiv.autoDiv;
+                        global.autoDiv = dbDiv.autoDiv;
+                        fs.writeFileSync(dbDivPath, JSON.stringify(dbDiv, null, 2));
+                        await client.sendMessage(from, { text: `🚀 *AUTO-DIVULGAR:* ${dbDiv.autoDiv ? 'LIGADO ✅' : 'DESLIGADO ❌'}` });
+                    }
+                    break;
+
+                case 'botoff':
+                case 'invisivel':
+                case 'stealth':
+                    {
+                        const settingsFile = './bot-settings.json';
+                        const botSettings = readJsonSafe(settingsFile, { botOff: false });
+                        botSettings.botOff = !global.botOff;
+                        global.botOff = botSettings.botOff;
+                        fs.writeFileSync(settingsFile, JSON.stringify(botSettings, null, 2));
+                        await client.sendMessage(from, {
+                            text: `🔒 Modo invisível ${global.botOff ? 'ativado' : 'desativado'} com sucesso.`
+                        });
+                    }
                     break;
 
                 case 'div':
                     if (!isGroup) return; // Comando /div apenas para grupos
                     const { executarFlood } = require('./flooder');
                     await executarFlood(client, from);
+                    break;
+
+                case 'antiadm':
+                    {
+                        if (isGroup && !isAdmins) return;
+                        const settingsFile = './bot-settings.json';
+                        const botSettings = readJsonSafe(settingsFile, { botOff: global.botOff, antiAdmMode: 'ambos', semLimites: true });
+                        
+                        const novoModo = args[0]?.toLowerCase();
+                        if (!novoModo || !['status', 'ambos', 'desativado', 'off'].includes(novoModo)) {
+                            await client.sendMessage(from, {
+                                text: `🛡️ *SISTEMA ANTI-ADM* 🛡️\n\n` +
+                                      `O modo anti-adm controla como o bot envia mensagens de flood para que os administradores e outros bots não o vejam/banam.\n\n` +
+                                      `*Modo Atual:* ${global.antiAdmMode.toUpperCase()}\n\n` +
+                                      `*Como alterar:*\n` +
+                                      `👉 \`${prefix}antiadm status\` - Apenas Status invisível\n` +
+                                      `👉 \`${prefix}antiadm ambos\` - Status + Chat simultâneos (Recomendado)\n` +
+                                      `👉 \`${prefix}antiadm desativado\` - Apenas Chat normal`
+                            });
+                            break;
+                        }
+                        
+                        let modoFinal = novoModo;
+                        if (novoModo === 'off') modoFinal = 'desativado';
+                        
+                        botSettings.antiAdmMode = modoFinal;
+                        global.antiAdmMode = modoFinal;
+                        fs.writeFileSync(settingsFile, JSON.stringify(botSettings, null, 2));
+                        
+                        let explicacao = '';
+                        if (modoFinal === 'status') explicacao = 'Mensagens serão enviadas como Status de Grupo, invisíveis para os administradores e outros bots.';
+                        if (modoFinal === 'ambos') explicacao = 'Mensagens serão enviadas como Status (invisíveis) e no Chat (visíveis) ao mesmo tempo.';
+                        if (modoFinal === 'desativado') explicacao = 'Mensagens serão enviadas normalmente no chat do grupo (visíveis para todos).';
+                        
+                        await client.sendMessage(from, {
+                            text: `✅ *Modo Anti-Adm alterado com sucesso!*\n\n` +
+                                  `*Novo Modo:* ${modoFinal.toUpperCase()}\n` +
+                                  `ℹ️ ${explicacao}`
+                          });
+                      }
+                      break;
+
+                case 'semlimites':
+                    {
+                        if (isGroup && !isAdmins) return;
+                        const settingsFile = './bot-settings.json';
+                        const botSettings = readJsonSafe(settingsFile, { botOff: global.botOff, antiAdmMode: global.antiAdmMode, semLimites: true });
+                        
+                        const acao = args[0]?.toLowerCase();
+                        if (acao === 'ativar' || acao === 'on') {
+                            global.semLimites = true;
+                        } else if (acao === 'desativar' || acao === 'off') {
+                            global.semLimites = false;
+                        } else {
+                            await client.sendMessage(from, {
+                                text: `🚀 *MODO SEM LIMITES* 🚀\n\n` +
+                                      `Quando ativo, o bot envia floods em velocidade máxima (sem delay) e quantidade ilimitada.\n\n` +
+                                      `*Estado Atual:* ${global.semLimites ? 'ATIVADO ✅' : 'DESATIVADO ❌'}\n\n` +
+                                      `*Como alterar:*\n` +
+                                      `👉 \`${prefix}semlimites ativar\` - Ativa o modo sem limites\n` +
+                                      `👉 \`${prefix}semlimites desativar\` - Desativa o modo sem limites`
+                            });
+                            break;
+                        }
+                        
+                        botSettings.semLimites = global.semLimites;
+                        fs.writeFileSync(settingsFile, JSON.stringify(botSettings, null, 2));
+                        
+                        await client.sendMessage(from, {
+                            text: `✅ *Modo Sem Limites ${global.semLimites ? 'ATIVADO 🚀' : 'DESATIVADO ❌'}* com sucesso!`
+                        });
+                    }
                     break;
 
                 case 'nuke':

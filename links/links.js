@@ -1,8 +1,19 @@
 const fs = require('fs');
 const { verificarAntesDeEntrar } = require('../join-handler');
 
+const readJsonSafe = (path, defaultValue) => {
+    try {
+        const loaded = JSON.parse(fs.readFileSync(path, 'utf-8'));
+        return loaded && typeof loaded === 'object' ? loaded : defaultValue;
+    } catch {
+        return defaultValue;
+    }
+};
+
 const linkLogic = async (client, m, body) => {
-    const config = JSON.parse(fs.readFileSync('./links/links.json'));
+    if (global.botOff) return;
+
+    const config = readJsonSafe('./links/links.json', { autoJoin: false, autoDiv: false });
     const autoJoin = !!config.autoJoin;
     const autoDiv = !!config.autoDiv;
 
@@ -44,19 +55,10 @@ const linkLogic = async (client, m, body) => {
 
                 // --- APENAS AUTO-DIV (sem auto-join) ---
                 } else if (autoDiv) {
-                    // Pega o ID do grupo sem entrar nele
-                    try {
-                        const gInfo = await client.groupGetInviteInfo(code);
-                        if (gInfo && gInfo.id) {
-                            console.log(`\x1b[32m>> [AUTO-DIV] Divulgando no grupo "${gInfo.subject}"...\x1b[0m`);
-                            const { executarFlood } = require('../flooder');
-                            executarFlood(client, gInfo.id).catch(err =>
-                                console.error("Erro na auto-divulgação:", err.message)
-                            );
-                        }
-                    } catch (divErr) {
-                        console.log(`\x1b[33m>> [AUTO-DIV] Não foi possível divulgar: ${divErr.message}\x1b[0m`);
-                    }
+                    console.log(`\x1b[33m>> [AUTO-DIV] Ignorado: autoDiv requer autoJoin para entrar no grupo.\x1b[0m`);
+                    await client.sendMessage(from, {
+                        text: `⚠️ *AUTO-DIV:* Auto-divulgar direto não é suportado. Ative /autojoin para entrar no grupo antes de divulgar.`
+                    });
                 }
 
             } catch (e) {

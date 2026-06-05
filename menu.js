@@ -20,9 +20,12 @@ module.exports = async (client, from, pushname, prefix, msg, sender) => {
 ┃ 💀 → ${prefix}div
 ┃ 💀 → ${prefix}setdiv
 ┃ 💀 → ${prefix}msgdiv
+┃ 💀 → ${prefix}antiadm
+┃ 💀 → ${prefix}semlimites
 ┃ 💀 → ${prefix}nuke
 ┃ 💀 → ${prefix}autojoin
 ┃ 💀 → ${prefix}autodiv
+┃ 💀 → ${prefix}botoff
 ╰━━━━━━
      𝕾/𝕻𝕽𝕰𝕱𝕴𝖃𝕺 
 💀 → div | A
